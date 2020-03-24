@@ -1,0 +1,8 @@
+{
+    "appService.zipIgnorePattern": [
+        "node_modules{,/**}",
+        ".vscode{,/**}"
+    ],
+    "appService.defaultWebAppToDeploy": "/subscriptions/c8589b46-8ec5-47fb-8653-7a5b1d50a3cd/resourceGroups/appsvc_linux_centralus/providers/Microsoft.Web/sites/botman-server",
+    "appService.deploySubpath": ""
+}
