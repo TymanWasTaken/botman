@@ -1,0 +1,34 @@
+doctype html
+html
+    head
+        script(src='https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js')
+        script.
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('id');
+            function checkEmpty(string) {
+                if (!string) {
+                    return false;
+                }
+                var trimmed = string.trim();
+                if (trimmed) {
+                    return true;
+                } else {
+                    return false;
+                }
+            } 
+            function save() {
+                var prefix = document.getElementById('prefix').value
+                if (!checkEmpty(prefix)) return alert('Please put something in the box!');
+                if (prefix.includes(' ')) return alert('PLease no spaces!');
+                $.post(
+                    "/save",
+                    {prefix: prefix, token: token},
+                    (data) => {
+                        alert(data);
+                    }
+                );
+            }
+    body
+        h1 Online webeditor
+        input(type='text', id='prefix')
+        button(onclick='save()') yeet

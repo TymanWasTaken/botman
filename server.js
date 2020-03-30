@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable no-redeclare */
 /* eslint-disable no-inner-declarations */
 const Discord = require('discord.js');
@@ -13,7 +14,18 @@ const app = require('express')();
 const keyv = require('keyv');
 const keyvFile = require('keyv-file');
 var Long = require('long');
+const bodyParser = require('body-parser');
+const store = require('./store.js');
 var keyvStores = {};
+function makeid(length) {
+	var result           = '';
+	var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+	var charactersLength = characters.length;
+	for ( var i = 0; i < length; i++ ) {
+	   result += characters.charAt(Math.floor(Math.random() * charactersLength));
+	}
+	return result;
+}
 const commands = {
 	kick: {
 		op: 'gt',
@@ -67,10 +79,11 @@ const commands = {
 		op: 'eq',
 		args: 0
 	},
-	servers: {
+	web: {
 		op: 'eq',
 		args: 0
 	}
+
 };
 function validURL(str) {
 	var pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
@@ -95,8 +108,15 @@ bot.on('ready', () => {
 			namespace: key
 		});
 	}
+	keyvStores.web = new keyv({
+		store: new keyvFile({
+			filename: __dirname + '\\serverConf.json'
+		}),
+		namespace: 'web'
+	});
 	bot.guilds.cache.forEach(makeKeyvNamespaces);
 	console.log(`Bot has started, in ${bot.guilds.cache.size} server(s).`);
+	webstuff();
 });
 const getDefaultChannel = (guild) => {
 	// get "original" default channel
@@ -255,9 +275,39 @@ bot.on('message', async message => {
 	if (command == 'help') {
 		message.reply('Here -> https://tymanyay.github.io/botman/');
 	}
+	if (command == 'web') {
+		var id = makeid(10);
+		var data = {guild: message.guild, member: message.member, channel: message.channel};
+		await keyvStores.web.set(id, data);
+		message.member.send('go to http://localhost/webeditor?id=' + id + '\nReact with 👍 to make this link not usable anymore.')
+			.then(m => {
+				message.reply('Look at DM\'s');
+				m.react('👍');
+				var filter = (reaction, user) => reaction.emoji.name === '👍' && user.id === message.author.id;
+				var collector = m.createReactionCollector(filter);
+				collector.on('collect', () => {
+					m.reply('The link is not usable anymore.');
+				});
+			});
+		
+	}
 });
 bot.login(tokens.bot.token).catch((err) => {
 	if (err) throw err;
 });
 // #####################     WEBSITE/SOCKET.IO     ##########################
-// NOT NEEDED IN DEV-BOTMAN
+function webstuff() {
+	app.use(bodyParser.urlencoded({ extended: true }));
+	app.set('view-engine', 'pug');
+	app.get('/webeditor', (req, res) => {
+		res.render(__dirname + '\\views\\webeditor.pug');
+	});
+	app.post('/save', async (req, res) => {
+		if (await keyvStores.web.get(req.body.token) === undefined) return res.send('Not a valid token!');
+		var tokenData = await keyvStores.web.get(req.body.token);
+		keyvStores[tokenData.guild.id].set('prefix', req.body.prefix);
+	});
+	app.listen(80, () => {
+		console.log('Web server online');
+	});
+}
