@@ -6,8 +6,22 @@ function KeyStore(file) {
 	if (!file) { // if you run me without new
 		throw new Error('Missing file to read/write');
 	}
+	function isJson(str) {
+		try {
+			JSON.parse(str);
+		} catch (e) {
+			return false;
+		}
+		return true;
+	}
 	async function setItem(key, value) {
 		fs.readFile(file, (err, data) => {
+			if (!data.isJson) {
+				fs.writeFile(file, '{}', (err, data) => {
+					if (err) throw err;
+					console.log(data);
+				});
+			}
 			if (err) throw err;
 			var dataParsed = JSON.parse(data);
 			dataParsed[key] = value;
