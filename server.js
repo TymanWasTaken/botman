@@ -3,7 +3,7 @@
 /* eslint-disable no-inner-declarations */
 const Discord = require('discord.js');
 const bot = new Discord.Client();
-const config = require('./config.json');
+const config = require('./globalConf.json');
 const randomWords = require('random-words');
 const fs = require('fs');
 const tokens = require('./tokens.json');
@@ -11,12 +11,9 @@ const figlet = require('figlet');
 const ytdl = require('ytdl-core');
 const ytsearch = require('youtube-api-v3-search');
 const app = require('express')();
-const keyv = require('keyv');
-const keyvFile = require('keyv-file');
 var Long = require('long');
 const bodyParser = require('body-parser');
-const store = require('./store.js');
-var keyvStores = {};
+var serverConf = require('./serverConf.json');
 function makeid(length) {
 	var result           = '';
 	var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -55,10 +52,6 @@ const commands = {
 		op: 'eq',
 		args: 0
 	},
-	prefix: {
-		op: 'eq',
-		args: 1
-	},
 	info: {
 		op: 'eq',
 		args: 0
@@ -79,11 +72,10 @@ const commands = {
 		op: 'eq',
 		args: 0
 	},
-	web: {
+	prefix: {
 		op: 'eq',
-		args: 0
+		args: 1
 	}
-
 };
 function validURL(str) {
 	var pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
@@ -94,13 +86,22 @@ function validURL(str) {
 		'(\\#[-a-z\\d_]*)?$','i'); // fragment locator
 	return !!pattern.test(str);
 }
+function isTyman(member) {
+	if (member.id != '487443883127472129') {return true;}
+	else {return false;}
+}
+function event(channel) {
+	var events = {
+
+	}
+}
 bot.on('ready', () => {
 	var myArray = config.activities;
 	bot.user.setActivity(myArray[Math.floor(Math.random() * myArray.length)]);
 	setTimeout(() => {
 		bot.user.setActivity(myArray[Math.floor(Math.random() * myArray.length)]);
 	}, 30000);
-	function makeKeyvNamespaces(value, key) {
+	/*function makeKeyvNamespaces(value, key) {
 		keyvStores[key] = new keyv({
 			store: new keyvFile({
 				filename: __dirname + '\\serverConf.json'
@@ -115,8 +116,9 @@ bot.on('ready', () => {
 		namespace: 'web'
 	});
 	bot.guilds.cache.forEach(makeKeyvNamespaces);
+	*/
 	console.log(`Bot has started, in ${bot.guilds.cache.size} server(s).`);
-	webstuff();
+	//webstuff();
 });
 const getDefaultChannel = (guild) => {
 	// get "original" default channel
@@ -128,13 +130,13 @@ const getDefaultChannel = (guild) => {
 	// Now we get into the heavy stuff: first channel in order where the bot can speak
 	// hold on to your hats!
 	return guild.channels.cache.filter(c => c.type === 'text' && c.permissionsFor(guild.client.user).has('SEND_MESSAGES')).sort((a, b) => a.position - b.position || Long.fromString(a.id).sub(Long.fromString(b.id)).toNumber()).first();
-}
+};
 bot.on('guildCreate', (guild) => {
 	getDefaultChannel(guild).send('Thank you for adding BOTMAN to your discord server. The default prefix is ?, but you can change it with "?prefix {prefix}". The full documentation is availible at https://tymanyay.github.io/botman');
 });
 bot.on('guildDelete', (guild) => {
-	keyvStores[guild.id].clear();
-	keyvStores[guild.id] = undefined;
+	//keyvStores[guild.id].clear();
+	//keyvStores[guild.id] = undefined;
 });
 /*
 bot.on('guildMemberAdd', member => {
@@ -151,7 +153,7 @@ bot.on('message', async message => {
 	}
 	if (message.author.bot) return;
 	if (message.content.includes('suicide')) return message.reply('pls no kil you self');
-	var prefix = await keyvStores[message.guild.id].get('prefix') || '?';
+	var prefix = serverConf.prefixes[message.guild.id] || '?';
 	if (message.content.indexOf(prefix) !== 0) return;
 	const args = message.content.slice(prefix.length).trim().split(/ +/g);
 	const command = args.shift().toLowerCase();
@@ -172,12 +174,12 @@ bot.on('message', async message => {
 	if (command == 'bubble') {
 		message.channel.send('|| pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop |||| pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop |||| pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop |||| pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop |||| pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop |||| pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop |||| pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop ||');
 	}
-	/*if (command === 'play' || command === 'stop') {
+	/* if (command === 'play' || command === 'stop') {
 		if (!message.member.voice.channel) return message.reply('Please join a voice channel first.');
 		if (command == 'play' && args[0] == 'custom') {
 
 		}
-	}*/
+	} */
 	if (command == 'servers') {
 		fs.writeFile(__dirname + '\\servers.log', JSON.stringify(Object.fromEntries(bot.guilds.cache)), () => {});
 		return message.reply('Not a valid command!');
@@ -251,12 +253,12 @@ bot.on('message', async message => {
 		message.channel.send(commands.text.texts[args[0]]);
 	}
 	if (command == 'kilbot') {
-		if (message.member.id != '487443883127472129') return message.reply('No you dumbo you must be the creator of the bot to do that!');
+		if (!isTyman()) return message.reply('No you dumbo you must be the creator of the bot to do that!');
 		bot.destroy();
 		process.exit();
 	}
 	if (command == 'prefix') {
-		await keyvStores[message.guild.id].set('prefix', args[0]);
+		serverConf.prefixes[message.guild.id] = args[0];
 		message.channel.send(`Prefix for this server is now "${args[0]}"!`);
 	}
 	if (command == 'info') {
@@ -274,7 +276,7 @@ bot.on('message', async message => {
 	}
 	if (command == 'help') {
 		message.reply('Here -> https://tymanyay.github.io/botman/');
-	}
+	}/*
 	if (command == 'web') {
 		var id = makeid(10);
 		var data = {guild: message.guild, member: message.member, channel: message.channel};
@@ -290,24 +292,24 @@ bot.on('message', async message => {
 				});
 			});
 		
-	}
+	}*/
 });
 bot.login(tokens.bot.token).catch((err) => {
 	if (err) throw err;
 });
 // #####################     WEBSITE/SOCKET.IO     ##########################
-function webstuff() {
-	app.use(bodyParser.urlencoded({ extended: true }));
-	app.set('view-engine', 'pug');
-	app.get('/webeditor', (req, res) => {
-		res.render(__dirname + '\\views\\webeditor.pug');
-	});
-	app.post('/save', async (req, res) => {
-		if (await keyvStores.web.get(req.body.token) === undefined) return res.send('Not a valid token!');
-		var tokenData = await keyvStores.web.get(req.body.token);
-		keyvStores[tokenData.guild.id].set('prefix', req.body.prefix);
-	});
-	app.listen(80, () => {
-		console.log('Web server online');
-	});
-}
+// function webstuff() {
+// 	app.use(bodyParser.urlencoded({ extended: true }));
+// 	app.set('view-engine', 'pug');
+// 	app.get('/webeditor', (req, res) => {
+// 		res.render(__dirname + '\\views\\webeditor.pug');
+// 	});
+// 	app.post('/save', async (req, res) => {
+// 		if (await keyvStores.web.get(req.body.token) === undefined) return res.send('Not a valid token!');
+// 		var tokenData = await keyvStores.web.get(req.body.token);
+// 		keyvStores[tokenData.guild.id].set('prefix', req.body.prefix);
+// 	});
+// 	app.listen(80, () => {
+// 		console.log('Web server online');
+// 	});
+// }
