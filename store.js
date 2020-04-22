@@ -1,12 +1,12 @@
 const fs = require('fs');
 function KeyStore(file, namespace) {
-	if (!new.target) { // if you run me without new
+	if (!new.target) {
 		throw new Error('Please call this with the new operator.');
 	}
-	if (!file) { // if you run me without new
+	if (!file) {
 		throw new Error('Missing file to read/write');
 	}
-	if (!namespace) { // if you run me without new
+	if (!namespace) { 
 		throw new Error('Missing namespace for current instance of KeyStore');
 	}
 	function isJson(str) {
@@ -40,6 +40,7 @@ function KeyStore(file, namespace) {
 		else {
 			dataParsed = JSON.parse(data);
 		}
+		if (dataParsed[namespace] == undefined) return undefined;
 		return dataParsed[namespace][key];
 	}
 	function delItem(key) {

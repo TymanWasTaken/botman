@@ -14,6 +14,8 @@ const app = require('express')();
 var Long = require('long');
 const bodyParser = require('body-parser');
 var serverConf = require('./serverConf.json');
+const store = require('./store.js');
+var Stores = {};
 function makeid(length) {
 	var result           = '';
 	var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -75,6 +77,10 @@ const commands = {
 	prefix: {
 		op: 'eq',
 		args: 1
+	},
+	bal: {
+		op: 'eq',
+		args: 0
 	}
 };
 function validURL(str) {
@@ -90,35 +96,24 @@ function isTyman(member) {
 	if (member.id != '487443883127472129') {return true;}
 	else {return false;}
 }
-function event(channel) {
+/* function event(channel) {
 	var events = {
 
 	}
-}
+} */
 bot.on('ready', () => {
 	var myArray = config.activities;
 	bot.user.setActivity(myArray[Math.floor(Math.random() * myArray.length)]);
 	setTimeout(() => {
 		bot.user.setActivity(myArray[Math.floor(Math.random() * myArray.length)]);
 	}, 30000);
-	/*function makeKeyvNamespaces(value, key) {
-		keyvStores[key] = new keyv({
-			store: new keyvFile({
-				filename: __dirname + '\\serverConf.json'
-			}),
-			namespace: key
-		});
+	function makeStores(value, key) {
+		console.log(key);
+		Stores[key] = new store.KeyStore('./serverConf.json', key);
 	}
-	keyvStores.web = new keyv({
-		store: new keyvFile({
-			filename: __dirname + '\\serverConf.json'
-		}),
-		namespace: 'web'
-	});
-	bot.guilds.cache.forEach(makeKeyvNamespaces);
-	*/
+	bot.guilds.cache.forEach(makeStores);
+	Stores.money = new store.KeyStore('./serverConf.json', 'money');
 	console.log(`Bot has started, in ${bot.guilds.cache.size} server(s).`);
-	//webstuff();
 });
 const getDefaultChannel = (guild) => {
 	// get "original" default channel
@@ -135,8 +130,7 @@ bot.on('guildCreate', (guild) => {
 	getDefaultChannel(guild).send('Thank you for adding BOTMAN to your discord server. The default prefix is ?, but you can change it with "?prefix {prefix}". The full documentation is availible at https://tymanyay.github.io/botman');
 });
 bot.on('guildDelete', (guild) => {
-	//keyvStores[guild.id].clear();
-	//keyvStores[guild.id] = undefined;
+	Stores[guild.id].clear();
 });
 /*
 bot.on('guildMemberAdd', member => {
@@ -153,7 +147,7 @@ bot.on('message', async message => {
 	}
 	if (message.author.bot) return;
 	if (message.content.includes('suicide')) return message.reply('pls no kil you self');
-	var prefix = serverConf.prefixes[message.guild.id] || '?';
+	var prefix = Stores[message.guild.id].get('prefix') || '?';
 	if (message.content.indexOf(prefix) !== 0) return;
 	const args = message.content.slice(prefix.length).trim().split(/ +/g);
 	const command = args.shift().toLowerCase();
@@ -170,6 +164,15 @@ bot.on('message', async message => {
 		const m = await message.channel.send('Ping?');
 		m.edit(`Pong! Latency is ${m.createdTimestamp -
         message.createdTimestamp}ms.`);
+	}
+	if (command === 'bal') {
+		if (Stores.money.get(message.member.id) === undefined) {
+			Stores.money.set(message.member.id, 0);
+			return message.channel.send('```' + message.author.tag + '\nBalence: 0```');
+		}
+		else {
+			return message.channel.send('```' + message.author.tag + '\nBalence: ' + Stores.money.get(message.member.id) + '```');
+		}
 	}
 	if (command == 'bubble') {
 		message.channel.send('|| pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop |||| pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop |||| pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop |||| pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop |||| pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop |||| pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop |||| pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop ||');
@@ -258,7 +261,7 @@ bot.on('message', async message => {
 		process.exit();
 	}
 	if (command == 'prefix') {
-		serverConf.prefixes[message.guild.id] = args[0];
+		Stores[message.guild.id].set('prefix', args[0]);
 		message.channel.send(`Prefix for this server is now "${args[0]}"!`);
 	}
 	if (command == 'info') {
