@@ -1,20 +1,21 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable no-redeclare */
 /* eslint-disable no-inner-declarations */
+process.title = "BOTMAN Discord bot";
 const Discord = require('discord.js');
 const bot = new Discord.Client();
-const config = require('./globalConf.json');
+const config = require('/home/Tyman/botman/globalConf.json');
 const randomWords = require('random-words');
 const fs = require('fs');
-const tokens = require('./tokens.json');
+const tokens = require('/home/Tyman/botman/tokens.json');
 const figlet = require('figlet');
 const ytdl = require('ytdl-core');
 const ytsearch = require('youtube-api-v3-search');
 const app = require('express')();
 var Long = require('long');
 const bodyParser = require('body-parser');
-var serverConf = require('./serverConf.json');
-const store = require('./store.js');
+var serverConf = require('/home/Tyman/botman/serverConf.json');
+const store = require('/home/Tyman/botman/store.js');
 var Stores = {};
 function makeid(length) {
 	var result           = '';
@@ -81,6 +82,10 @@ const commands = {
 	bal: {
 		op: 'eq',
 		args: 0
+	},
+	cheatmoney: {
+		op: 'eq',
+		args: 2
 	}
 };
 function validURL(str) {
@@ -93,7 +98,7 @@ function validURL(str) {
 	return !!pattern.test(str);
 }
 function isTyman(member) {
-	if (member.id != '487443883127472129') {return true;}
+	if (member.id == '487443883127472129') {return true;}
 	else {return false;}
 }
 /* function event(channel) {
@@ -108,11 +113,10 @@ bot.on('ready', () => {
 		bot.user.setActivity(myArray[Math.floor(Math.random() * myArray.length)]);
 	}, 30000);
 	function makeStores(value, key) {
-		console.log(key);
-		Stores[key] = new store.KeyStore('./serverConf.json', key);
+		Stores[key] = new store.KeyStore('/home/Tyman/botman/serverConf.json', key);
 	}
 	bot.guilds.cache.forEach(makeStores);
-	Stores.money = new store.KeyStore('./serverConf.json', 'money');
+	Stores.money = new store.KeyStore('/home/Tyman/botman/serverConf.json', 'money');
 	console.log(`Bot has started, in ${bot.guilds.cache.size} server(s).`);
 });
 const getDefaultChannel = (guild) => {
@@ -167,12 +171,17 @@ bot.on('message', async message => {
 	}
 	if (command === 'bal') {
 		if (Stores.money.get(message.member.id) === undefined) {
-			Stores.money.set(message.member.id, 0);
-			return message.channel.send('```' + message.author.tag + '\nBalence: 0```');
+			Stores.money.set(message.member.id, {money: 0});
+			return message.channel.send('```' + message.author.tag + '\nBalance: 0```');
 		}
 		else {
-			return message.channel.send('```' + message.author.tag + '\nBalence: ' + Stores.money.get(message.member.id) + '```');
+			return message.channel.send('```' + message.author.tag + '\nBalance: ' + Stores.money.get(message.member.id).money + '```');
 		}
+	}
+	if (command === 'cheatmoney') {
+		if (!isTyman(message.member)) return message.reply('No you dumbo you must be the creator of the bot to do that!');
+		else if (isNaN(args[1])) return message.reply('Please mention a valid number');
+		else Stores.money.set(message.mentions.members.first().id, {money: Number(args[1])});
 	}
 	if (command == 'bubble') {
 		message.channel.send('|| pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop |||| pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop |||| pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop |||| pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop |||| pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop |||| pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop |||| pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop || || pop ||');
@@ -189,7 +198,7 @@ bot.on('message', async message => {
 	}
 	if (command === 'kick') {
 		if (!checkPerms('KICK_MEMBERS')) return message.reply('Sorry, you don\'t have permissions to use this!');
-		let member = message.mentions.members.first() || message.guild.members.cache.get(args[0]);
+		let member = message.mentions.members.first();
 		if (!member) return message.reply('Please mention a valid member of this server');
 		if (member.id == bot.user.id) return message.reply('I\'d like to not kick myself thank you very much.');
 		if (!member.kickable) return message.reply('I cannot kick this user! Do they have a higher role? Do I have kick permissions?');
@@ -256,7 +265,7 @@ bot.on('message', async message => {
 		message.channel.send(commands.text.texts[args[0]]);
 	}
 	if (command == 'kilbot') {
-		if (!isTyman()) return message.reply('No you dumbo you must be the creator of the bot to do that!');
+		if (!isTyman(message.member)) return message.reply('No you dumbo you must be the creator of the bot to do that!');
 		bot.destroy();
 		process.exit();
 	}
